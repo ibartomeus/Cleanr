@@ -1,0 +1,88 @@
+---
+title: "Cleaning in action"
+author: "I. Bartomeus"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source(file = "functions.R")
+```
+
+Turn on the music and let's clean some dirty data
+
+```{r}
+dirty_data <- read.csv("data/dirty_data.csv", sep = ";")
+template <- read.csv("data/template.csv", sep = ";")  
+species_tesaurus <- read.csv("data/species_tesaurus.csv", sep = ";")
+```
+
+First, check colnames
+
+```{r}
+check <- define_template(template, species_tesaurus)
+
+compare_variables(check, dirty_data)
+#Reference doi is mispelled
+colnames(dirty_data)[which(colnames(dirty_data) == "Reference..doi.")] <- "Reference.doi"
+
+dirty_data <- add_missing_variables(check, dirty_data)
+dirty_data <- add_missing_variables(check, dirty_data)
+
+#drop_variables(check, dirty_data) I am not droping variables yet, as I'll need those.
+```
+
+Second, fix variables.
+
+```{r}
+#I never remember georeference functions
+help_geo()
+dirty_data$Latitude <- parzer::parse_lat(as.character(dirty_data$UTM.N))
+dirty_data$Longitude <- parzer::parse_lat(as.character(dirty_data$UTM.S))
+
+alternative <- mgrs::mgrs_to_latlng(as.character(dirty_data$MGRS))
+#From here you can extract lat and long easely
+
+#Geolocate TBA
+
+#and I also forget about Date manipulation
+help_date()
+#but if the date format is easy I have a wrapper
+
+temp <- extract_date(dirty_data$Date, format = "%d-%m-%Y")
+dirty_data$Year <- temp$year
+dirty_data$Month <- temp$month
+dirty_data$Day <- temp$day
+
+#Species names
+help_species() #tipical useful functions
+
+temp <- extract_pieces(dirty_data$Species, species = TRUE) #this may fail with more dirty data
+#in this case strsplit() may also work.
+temp2 <- extract_pieces(dirty_data$Genus, pattern_ = " (", i = 2, f = 1) 
+dirty_data$Subgenus <- temp2$piece2
+dirty_data$Genus <- temp$piece2
+dirty_data$Species <- temp$piece1
+
+#Add uid
+
+clean_data <- drop_variables(template, dirty_data)
+clean_data <- add_uid(newdat = clean_data, "test")
+
+head(clean_data)
+```
+
+Second check species names
+
+```{r}
+
+```
+
+
+
+
+
+
+
