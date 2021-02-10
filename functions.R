@@ -35,9 +35,10 @@ add_missing_variables <- function(template, newdat){
 }
 
 drop_variables <- function(template, newdat){
-  dat <- newdat[names(template)]
+  dat <- newdat[template[["variables"]]]
   dat
 }
+
 
 #Geolocate----
 
@@ -54,6 +55,23 @@ help_geo <- function(){
 #Grados y Minutos Decimales (GMD)	41°23.327' N	2°9.539' E
 #Grados, Minutos y Segundos (GMS)	41°23'19.6'' N	2°9'32.4'' E
 
+geocode <- function(places){
+  require(tmaptools)
+  long <- rep(NA, length(places))
+  lat <- rep(NA, length(places))
+  for(i in 1:length(places)){
+    temp <- geocode_OSM(places [i])
+    if(!is.null(temp)){
+      long[i] <- temp$coords[2]
+      lat[i] <- temp$coords[1]
+    }
+    print(paste(i, "palces done out of",  length(places)))
+  }
+  data.frame(places, lat, long)
+}
+
+geocode(places = c("Tomares, Sevilla", "Perro", "Barcelona"))
+
 #Dates----
 help_date <- function(x){
   print("temp <- as.POSIXlt(newdat$date, format = '%m/%d/%Y') #extract month and day")
@@ -63,11 +81,12 @@ help_date <- function(x){
 }
 #help_date()
 
-extract_date <- function(date_var, format_ = "%m/%d/%Y"){
+extract_date <- function(date_var, format_ = "%m/%d/%Y", offset = 1900){
+  date_var <- as.character(date_var)
   temp <- as.POSIXlt(date_var, format = format_) #extract month and day
   month <- format(temp,'%m')
   day <- format(temp,'%d')
-  year <- temp$year+3900 #CHECK, specially with other formats.
+  year <- temp$year+offset #CHECK, specially with other formats.
   data.frame(date_var, month, day, year)
 }
 
@@ -83,7 +102,7 @@ help_species <- function(){
 }
 
 extract_pieces <- function(to_split, pattern_ = "_", i = 1, f = 0, k = 1,
-                           subgenus = FALSE, species = FALSE){
+                           subgenus = FALSE, species = FALSE, single = TRUE){
   to_split <- as.character(to_split)
   if(subgenus){
     pattern_ <- "_("
@@ -97,17 +116,23 @@ extract_pieces <- function(to_split, pattern_ = "_", i = 1, f = 0, k = 1,
     f <- 0
     k <- 1
   }
-  temp <- unlist(gregexpr(pattern = pattern_, fixed = TRUE, text = to_split))
-  piece1 <- c()
-  piece2 <- c()
+  if(single) temp <- unlist(regexpr(pattern = pattern_, fixed = TRUE, text = to_split))
+  if(!single) temp <- unlist(gregexpr(pattern = pattern_, fixed = TRUE, text = to_split))
+  piece1 <- rep(NA, length(to_split))
+  piece2 <- rep(NA, length(to_split))
+  out <- data.frame(to_split, piece2, piece1)
   for(j in which(temp > 0)){
-    piece1[j] <- substr(to_split[j], start = temp[j]+i, 
+    out$piece1[j] <- substr(to_split[j], start = temp[j]+i, 
                                  stop = nchar(to_split[j])-f)
-    piece2[j] <- substr(to_split[j], start = 1, 
+    out$piece2[j] <- substr(to_split[j], start = 1, 
                               stop = temp[j]-k)
     }
-  data.frame(to_split, piece2, piece1)
-  }
+  out
+}
+
+
+install.packages('traitdataform') 
+get_gbif_taxonomy
 
 #uid----
 add_uid <- function(newdat, name = "id"){
@@ -116,4 +141,23 @@ add_uid <- function(newdat, name = "id"){
   #}
   newdat$uid <- uid
   newdat
+}
+
+#template----
+
+help_template <- function(){
+  print("use control-alt to edit all lines in bulk")
+  print("newdat <- read.csv(file = 'rawdata/csvs/test.csv')")
+  print("compare_variables(check, newdat)")
+  print("#colnames(newdat)[which(colnames(newdat) == 'badname')] <- 'goodname' #Rename variables if needed")
+  print("newdat <- add_missing_variables(check, newdat)")
+  print("#extract_pieces()") 
+  print("#help_geo()") 
+  print("#help_species()") 
+  print("#help_date()") 
+  print("newdat <- drop_variables(check, newdat) #reorder and drop variables")
+  print("summary(newdat)")
+  print("newdat <- add_uid(newdat = newdat, 'test')")
+  print("write.table(x = newdat, file = 'data/data.csv', quote = TRUE, sep = ',', col.names = FALSE, row.names = FALSE, append = TRUE)")
+  print("size <- size + nrow(newdat) #keep track of expected length")
 }

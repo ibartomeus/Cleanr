@@ -12,6 +12,7 @@ source(file = "functions.R")
 ```
 
 Turn on the music and let's clean some dirty data
+Use coma chameleon app 
 
 ```{r}
 dirty_data <- read.csv("data/dirty_data.csv", sep = ";")
@@ -28,7 +29,6 @@ compare_variables(check, dirty_data)
 #Reference doi is mispelled
 colnames(dirty_data)[which(colnames(dirty_data) == "Reference..doi.")] <- "Reference.doi"
 
-dirty_data <- add_missing_variables(check, dirty_data)
 dirty_data <- add_missing_variables(check, dirty_data)
 
 #drop_variables(check, dirty_data) I am not droping variables yet, as I'll need those.
